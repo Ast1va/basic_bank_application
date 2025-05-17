@@ -4,7 +4,8 @@ import {
   setDoc,
   updateDoc,
   getDocs,
-  collection
+  collection,
+  deleteDoc
 } from 'firebase/firestore';
 import { db } from './config';
 
@@ -50,4 +51,12 @@ export const getAllAccounts = async (): Promise<
     id: doc.id,
     ...(doc.data() as { balance: number }),
   }));
+};
+
+/**
+ * Bir kullanıcı hesabını Firebase'den sil
+ */
+export const deleteAccountFromFirebase = async (userId: string) => {
+  const docRef = doc(db, 'accounts', userId);
+  await deleteDoc(docRef);
 };
