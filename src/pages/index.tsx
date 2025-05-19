@@ -1,58 +1,35 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { useAuth } from '@/hooks/useAuth';
+import { useUserStore } from '@/store/useUserStore';
 import { getAuth, signOut } from 'firebase/auth';
-import {
-  createUserAccountIfNotExists,
-  getUserAccount,
-  updateUserBalance,
-} from '@/firebase/accountService';
+import { getUserAccount } from '@/firebase/accountService';
+import Head from 'next/head';
 
 export default function HomePage() {
-  const { user, loading } = useAuth();
   const router = useRouter();
-
+  const currentUser = useUserStore((state) => state.currentUser);
   const [balance, setBalance] = useState<number>(0);
-  const [newBalance, setNewBalance] = useState<string>('');
-  const [updating, setUpdating] = useState(false);
-
-  const fetchUserAccount = async () => {
-    if (!user) return;
-    await createUserAccountIfNotExists(user.uid);
-    const account = await getUserAccount(user.uid);
-    setBalance(account.balance);
-    setNewBalance(account.balance.toString());
-  };
+  const [name, setName] = useState<string>('');
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
-    if (user) fetchUserAccount();
-  }, [user]);
+    const fetchUserAccount = async () => {
+      if (!currentUser) return;
+      const account = await getUserAccount(currentUser.id);
+      setBalance(account.balance);
+      setName(account.name);
+    };
+
+    if (currentUser) fetchUserAccount();
+  }, [currentUser, router]);
 
   const handleLogout = async () => {
+    setRedirecting(true);
     await signOut(getAuth());
     router.push('/login');
   };
 
-  const handleUpdate = async () => {
-    try {
-      setUpdating(true);
-      const parsed = parseFloat(newBalance);
-      if (isNaN(parsed)) {
-        alert('Geçerli bir sayı giriniz.');
-        return;
-      }
-
-      await updateUserBalance(user!.uid, parsed);
-      await fetchUserAccount();
-    } catch (error) {
-      console.error('Güncelleme hatası:', error);
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  if (loading) return <p>Yükleniyor...</p>;
-  if (!user) {
+  if (!currentUser) {
     if (typeof window !== 'undefined') {
       router.push('/login');
     }
@@ -61,8 +38,14 @@ export default function HomePage() {
 
   return (
     <div className="max-w-xl mx-auto p-6">
+      <Head>
+        <title>Ana Sayfa | Basic Bank</title>
+      </Head>
+
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Hoş geldin, {user.email}!</h1>
+        <h1 className="text-2xl font-bold">
+          Hoş geldin, {name || currentUser.username}!
+        </h1>
         <button
           onClick={handleLogout}
           className="bg-red-500 text-white px-3 py-1 rounded"
@@ -73,22 +56,13 @@ export default function HomePage() {
 
       <div className="border p-4 rounded shadow">
         <p className="text-lg font-semibold">Bakiye: ₺{balance}</p>
-        <div className="mt-2 flex gap-2">
-          <input
-            type="number"
-            value={newBalance}
-            onChange={(e) => setNewBalance(e.target.value)}
-            className="border p-2 rounded w-full"
-          />
-          <button
-            onClick={handleUpdate}
-            disabled={updating}
-            className="bg-blue-600 text-white px-4 py-2 rounded"
-          >
-            Güncelle
-          </button>
-        </div>
       </div>
+
+      {redirecting && (
+        <p className="text-sm text-gray-600 text-center mt-4">
+          Giriş sayfasına yönlendiriliyorsunuz...
+        </p>
+      )}
     </div>
   );
 }

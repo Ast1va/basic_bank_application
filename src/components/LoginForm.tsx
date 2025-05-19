@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
 import { useUserStore } from '@/store/useUserStore';
+import { FirebaseError } from 'firebase/app';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -20,6 +21,15 @@ const LoginForm = () => {
       const userCredential = await loginUser(email, password);
       const { uid, email: userEmail } = userCredential.user;
 
+      // Hesap bilgilerini kontrol et (disabled kontrolü)
+      const accountRef = doc(db, 'accounts', uid);
+      const accountSnap = await getDoc(accountRef);
+
+      if (accountSnap.exists() && accountSnap.data().disabled === true) {
+        setError('Bu hesap devre dışı bırakılmış. Lütfen yöneticinizle iletişime geçin.');
+        return;
+      }
+
       const userRef = doc(db, 'users', uid);
       const userSnap = await getDoc(userRef);
       const isAdmin = userSnap.exists() && userSnap.data().isAdmin === true;
@@ -31,9 +41,31 @@ const LoginForm = () => {
         username: userEmail || '',
       });
 
+      console.log('✅ Giriş sonrası userStore güncelleniyor:', {
+        uid,
+        email: userEmail,
+        isAdmin,
+      });
+
       router.push(isAdmin ? '/admin' : '/');
     } catch (err: unknown) {
-      if (err instanceof Error) {
+      console.error('❌ Login sırasında hata oluştu:', err); // ✅ Konsola yaz
+
+      if (err instanceof FirebaseError) {
+        switch (err.code) {
+          case 'auth/user-not-found':
+            setError('Bu e-posta ile kayıtlı bir kullanıcı bulunamadı.');
+            break;
+          case 'auth/wrong-password':
+            setError('Şifreniz yanlış.');
+            break;
+          case 'auth/invalid-email':
+            setError('Geçerli bir e-posta adresi giriniz.');
+            break;
+          default:
+            setError('Giriş sırasında bir hata oluştu.');
+        }
+      } else if (err instanceof Error) {
         setError(err.message);
       } else {
         setError('Bilinmeyen bir hata oluştu.');
