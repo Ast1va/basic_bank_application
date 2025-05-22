@@ -49,7 +49,7 @@ const LoginForm = () => {
 
       router.push(isAdmin ? '/admin' : '/');
     } catch (err: unknown) {
-      console.error('❌ Login sırasında hata oluştu:', err); // ✅ Konsola yaz
+    
 
       if (err instanceof FirebaseError) {
         switch (err.code) {
