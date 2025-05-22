@@ -9,6 +9,7 @@ const TransferForm = () => {
   const currentUser = useUserStore((state) => state.currentUser);
   const [email, setEmail] = useState('');
   const [amount, setAmount] = useState('');
+  const [note, setNote] = useState(''); // 👈 açıklama alanı
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -42,10 +43,11 @@ const TransferForm = () => {
 
     setLoading(true);
     try {
-      await sendMoney(authUid, trimmedEmail, parsedAmount);
+      await sendMoney(authUid, trimmedEmail, parsedAmount, note); // 👈 açıklama dahil
       alert('Transfer başarılı!');
       setEmail('');
       setAmount('');
+      setNote(''); // 👈 form sıfırlama
       router.push('/');
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -80,6 +82,14 @@ const TransferForm = () => {
         min="0.01"
         step="0.01"
         required
+      />
+
+      <input
+        type="text"
+        placeholder="Açıklama (isteğe bağlı)"
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        className="border p-2 rounded w-full"
       />
 
       <button

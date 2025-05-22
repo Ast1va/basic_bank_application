@@ -13,10 +13,20 @@ import {
 import { db } from './config';
 import { getAuth } from 'firebase/auth';
 
+// 👇 Hata tipi (explicit any hatasını önlemek için)
+interface ErrorWithCode extends Error {
+  code?: string;
+}
+
 /**
  * Kullanıcıdan kullanıcıya para gönderme işlemi
  */
-export const sendMoney = async (fromUid: string, toEmail: string, amount: number) => {
+export const sendMoney = async (
+  fromUid: string,
+  toEmail: string,
+  amount: number,
+  note?: string // 👈 açıklama parametresi
+) => {
   console.log('🔥 sendMoney() fonksiyonu çalıştı');
 
   try {
@@ -35,7 +45,9 @@ export const sendMoney = async (fromUid: string, toEmail: string, amount: number
     const querySnapshot = await getDocs(accountQuery);
 
     if (querySnapshot.empty) {
-      throw new Error(`Alıcı bulunamadı: ${toEmail}`);
+      const error: ErrorWithCode = new Error(`Alıcı bulunamadı: ${toEmail}`);
+      error.code = 'custom/recipient-not-found';
+      throw error;
     }
 
     const receiverDoc = querySnapshot.docs[0];
@@ -75,6 +87,7 @@ export const sendMoney = async (fromUid: string, toEmail: string, amount: number
         to: receiverId,
         amount,
         timestamp: serverTimestamp(),
+        note: note || '', // 👈 açıklama Firestore'a yazılıyor
       });
       console.log('✅ Transfer kaydı başarıyla oluşturuldu. ID:', ref.id);
     } catch (err) {
@@ -101,6 +114,7 @@ export const getAllTransactions = async () => {
       from: string;
       to: string;
       amount: number;
+      note?: string;
       timestamp?: { toDate: () => Date };
     }),
   }));

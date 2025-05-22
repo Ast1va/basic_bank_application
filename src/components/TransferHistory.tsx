@@ -18,6 +18,7 @@ interface Transaction {
   to: string;
   amount: number;
   timestamp?: { toDate: () => Date };
+  note?: string; // 👈 açıklama alanı eklendi
 }
 
 const TransferHistory = () => {
@@ -68,7 +69,7 @@ const TransferHistory = () => {
             } else {
               map[uid] = 'Bilinmeyen';
             }
-        } catch (err) {
+          } catch (err) {
             console.error(`UID ${uid} için veri alınamadı:`, err);
             map[uid] = 'Erişim yok';
           }
@@ -118,6 +119,11 @@ const TransferHistory = () => {
                       </>
                     )}
                   </p>
+
+                  {t.note && (
+                    <p className="text-xs text-gray-600 italic mt-1">Açıklama: {t.note}</p>
+                  )}
+
                   <p className="text-xs text-gray-500">{dateStr}</p>
                 </li>
               );

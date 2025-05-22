@@ -22,6 +22,7 @@ interface Transaction {
   from: string;
   to: string;
   amount: number;
+  note?: string; // 👈 açıklama alanı eklendi
   timestamp?: { toDate: () => Date };
 }
 
@@ -179,6 +180,14 @@ const AdminPage = () => {
                     <strong>{fromName}</strong> → <strong>{toName}</strong> kişisine{' '}
                     <span className="text-blue-600 font-semibold">{tx.amount}₺</span> gönderdi
                   </p>
+
+                  {/* 👇 Açıklama varsa göster */}
+                  {tx.note && (
+                    <p className="text-xs text-gray-600 italic mt-1">
+                      Açıklama: {tx.note}
+                    </p>
+                  )}
+
                   <p className="text-xs text-gray-500">{dateStr}</p>
                 </li>
               );
