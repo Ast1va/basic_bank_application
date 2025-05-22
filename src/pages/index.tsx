@@ -3,6 +3,7 @@ import { useRouter } from 'next/router';
 import { useUserStore } from '@/store/useUserStore';
 import { getAuth, signOut } from 'firebase/auth';
 import { getUserAccount } from '@/firebase/accountService';
+import TransferHistory from '@/components/TransferHistory';
 import Head from 'next/head';
 
 export default function HomePage() {
@@ -27,6 +28,10 @@ export default function HomePage() {
     setRedirecting(true);
     await signOut(getAuth());
     router.push('/login');
+  };
+
+  const handleTransferRedirect = () => {
+    router.push('/transfer');
   };
 
   if (!currentUser) {
@@ -54,9 +59,17 @@ export default function HomePage() {
         </button>
       </div>
 
-      <div className="border p-4 rounded shadow">
+      <div className="border p-4 rounded shadow bg-white mb-4">
         <p className="text-lg font-semibold">Bakiye: ₺{balance}</p>
+        <button
+          onClick={handleTransferRedirect}
+          className="mt-3 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+        >
+          Para Gönder
+        </button>
       </div>
+
+      <TransferHistory />
 
       {redirecting && (
         <p className="text-sm text-gray-600 text-center mt-4">

@@ -7,6 +7,7 @@ import {
   updateAccountDisabledStatus,
 } from '@/firebase/accountService';
 import { getAuth, signOut } from 'firebase/auth';
+import { getAllTransactions } from '@/firebase/transferService';
 import Head from 'next/head';
 
 interface Account {
@@ -16,10 +17,20 @@ interface Account {
   disabled?: boolean;
 }
 
+interface Transaction {
+  id: string;
+  from: string;
+  to: string;
+  amount: number;
+  timestamp?: { toDate: () => Date };
+}
+
 const AdminPage = () => {
   const router = useRouter();
   const currentUser = useUserStore((state) => state.currentUser);
   const [accounts, setAccounts] = useState<Account[]>([]);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [emailMap, setEmailMap] = useState<Record<string, string>>({});
   const [edited, setEdited] = useState<Record<string, string>>({});
   const [updating, setUpdating] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
@@ -28,13 +39,30 @@ const AdminPage = () => {
     try {
       const all = await getAllAccounts();
       setAccounts(all);
+
       const initial: Record<string, string> = {};
       all.forEach((acc) => {
         initial[acc.id] = acc.balance.toString();
       });
       setEdited(initial);
+
+      // UID → isim map'i oluştur
+      const map: Record<string, string> = {};
+      all.forEach((acc) => {
+        map[acc.id] = acc.name || acc.id;
+      });
+      setEmailMap(map);
     } catch (error) {
       console.error('Hesaplar alınamadı:', error);
+    }
+  };
+
+  const fetchTransactions = async () => {
+    try {
+      const txs = await getAllTransactions();
+      setTransactions(txs);
+    } catch (error) {
+      console.error('Transferler alınamadı:', error);
     }
   };
 
@@ -45,6 +73,7 @@ const AdminPage = () => {
       router.push('/');
     } else {
       fetchAccounts();
+      fetchTransactions();
     }
   }, [currentUser, router]);
 
@@ -81,9 +110,7 @@ const AdminPage = () => {
     }
   };
 
-  // 👉 Güvenlik: Admin değilse hiçbir şey gösterme
-  if (!currentUser) return null;
-  if (!currentUser.isAdmin) return null;
+  if (!currentUser?.isAdmin) return null;
 
   return (
     <div className="max-w-2xl mx-auto p-6">
@@ -133,6 +160,31 @@ const AdminPage = () => {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="mt-8 border-t pt-4">
+        <h2 className="text-lg font-semibold mb-2">Transfer Geçmişi</h2>
+        {transactions.length === 0 ? (
+          <p className="text-gray-500">Hiç işlem bulunamadı.</p>
+        ) : (
+          <ul className="space-y-2">
+            {transactions.map((tx) => {
+              const fromName = emailMap[tx.from] || tx.from;
+              const toName = emailMap[tx.to] || tx.to;
+              const dateStr = tx.timestamp?.toDate().toLocaleString('tr-TR') || '-';
+
+              return (
+                <li key={tx.id} className="text-sm border p-3 rounded shadow-sm bg-white">
+                  <p>
+                    <strong>{fromName}</strong> → <strong>{toName}</strong> kişisine{' '}
+                    <span className="text-blue-600 font-semibold">{tx.amount}₺</span> gönderdi
+                  </p>
+                  <p className="text-xs text-gray-500">{dateStr}</p>
+                </li>
+              );
+            })}
+          </ul>
+        )}
       </div>
 
       {redirecting && (

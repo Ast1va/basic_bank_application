@@ -1,10 +1,12 @@
+// src/firebase/accountService.ts
 import {
   doc,
   getDoc,
   setDoc,
   updateDoc,
   getDocs,
-  collection
+  collection,
+  serverTimestamp,
 } from 'firebase/firestore';
 import { db } from './config';
 import { getAuth } from 'firebase/auth';
@@ -15,13 +17,20 @@ import { getAuth } from 'firebase/auth';
 export const createUserAccountIfNotExists = async (userId: string, name: string) => {
   const docRef = doc(db, 'accounts', userId);
   const docSnap = await getDoc(docRef);
+
   if (!docSnap.exists()) {
+    const authUser = getAuth().currentUser;
+    if (!authUser?.email) throw new Error('Kullanıcının e-posta bilgisi alınamadı.');
+
     await setDoc(docRef, {
       balance: 0,
       name,
+      email: authUser.email,           // 🔧 EKLENDİ
       disabled: false,
+      createdAt: serverTimestamp(),    // 🔧 Opsiyonel ama önerilir
     });
-  }
+
+      }
 };
 
 /**
