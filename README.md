@@ -1,107 +1,78 @@
 # 🏦 Basic Bank Application
 
-Bu proje, kullanıcıların banka hesaplarını yönetebileceği bir uygulamadır.  
-Ayrıca bir **admin paneli** üzerinden tüm kullanıcı hesaplarına erişilip bakiye güncellenebilir veya silinebilir.
+Firebase + Next.js tabanlı, sade ama güçlü bir bankacılık uygulaması.  
+Kullanıcılar bakiye görüntüleyebilir, para transferi yapabilir, bildirim alabilir.  
+Admin ise tüm hesapları yönetebilir ve bildirim gönderebilir.
 
 ---
 
 ## 🚀 Özellikler
 
-- ✅ Firebase Authentication ile kullanıcı kayıt & giriş
-- ✅ Admin paneli (Yalnızca admin@gmail.com kullanıcı erişebilir)
-- ✅ Firestore veritabanı ile hesap saklama
-- ✅ Zustand ile global state yönetimi
-- ✅ Hesap bakiyesi görüntüleme, güncelleme ve silme
-- ✅ Admin panelinde tüm kullanıcıların hesaplarına erişim
+### 👤 Kullanıcı Özellikleri
+- Hesap bakiyesi görüntüleme
+- Para transferi yapma
+- Transfer geçmişini inceleme
+- Bildirim alma ve okundu olarak işaretleme
+
+### 🛠️ Admin Paneli
+- Tüm kullanıcı hesaplarını görüntüleme
+- Bakiye güncelleme
+- Hesap aktif/pasif durumu değiştirme
+- Tüm transferleri görüntüleme
+- Bildirim gönderme
 
 ---
 
-## 🛠️ Kullanılan Teknolojiler
+## 🧪 Kurulum ve Geliştirme
 
-- [Next.js](https://nextjs.org/)
-- [TypeScript](https://www.typescriptlang.org/)
-- [Firebase](https://firebase.google.com/) (Auth + Firestore)
-- [Zustand](https://github.com/pmndrs/zustand)
-- TailwindCSS (isteğe bağlı)
-
----
-
-## 📦 Kurulum
-
-### 1. Reposu klonla
+### 1. Projeyi Klonla
 
 ```bash
-git clone https://github.com/kullanici-adi/basic_bank_application.git
+git clone https://github.com/Ast1va/basic_bank_application.git
 cd basic_bank_application
 ```
 
-### 2. Gerekli paketleri yükle
+### 2. Bağımlılıkları Yükle
 
 ```bash
 npm install
 ```
 
-### 3. Firebase yapılandırmasını yap
-
-`src/firebase/config.ts` dosyasındaki bilgileri kendi Firebase projenize göre doldurun:
-
-```ts
-const firebaseConfig = {
-  apiKey: 'YOUR_API_KEY',
-  authDomain: 'YOUR_PROJECT.firebaseapp.com',
-  projectId: 'YOUR_PROJECT_ID',
-  ...
-};
-```
-
-### 4. Firestore’da `/users` ve `/accounts` koleksiyonlarını oluşturun
-
-Örnek admin kullanıcı dokümanı:
-
-```
-/users/{uid}
-{
-  email: "admin@gmail.com",
-  isAdmin: true
-}
-```
-
----
-
-## 🧪 Geliştirme
+### 3. Uygulamayı Başlat
 
 ```bash
 npm run dev
 ```
 
-### 🔑 Giriş Bilgisi (test için)
+---
 
-- Email: `admin@gmail.com`
-- Şifre: `123456` (Firebase Auth üzerinde tanımlı olmalı)
+## 🔐 Firestore Güvenlik Kuralları
+
+Uygulama Firebase Firestore ile çalışır ve güvenlik kuralları kullanıcı ve admin yetkilerini ayırır.  
+- Kullanıcı yalnızca kendi verilerini görebilir/güncelleyebilir  
+- Admin bildirim gönderebilir, bakiye değiştirebilir  
+- Bildirimler sadece ilgili kullanıcı tarafından görülebilir
 
 ---
 
-## 📁 Proje Yapısı
+## 📌 Gelecek Planları
 
-```
-src/
-├── components/        → Arayüz bileşenleri (LoginForm, RegisterForm, AccountItem)
-├── firebase/          → Firebase config ve servisler
-├── pages/             → Next.js sayfaları (login, register, admin)
-├── store/             → Zustand store
-├── types/             → Tip tanımlamaları (User, Account)
-```
+- 🤖 Yapay zekâ entegrasyonu (AI asistan)
+- 📱 Mobil uyumluluk
+- 🎨 Gelişmiş kullanıcı arayüzü
+- 📊 Raporlama ve analiz ekranları
 
 ---
 
-## 📜 Lisans
+## 👨‍💻 Geliştirenler
 
-Bu proje MIT lisansı ile lisanslanmıştır.  
-Özgürce kullanabilir, geliştirebilir ve dağıtabilirsiniz.
+| İsim     | Rol                    |
+|----------|------------------------|
+| Yağız    | Junior Developer |
+| Burak    | Junior Developer |
 
 ---
 
-## 👨‍💻 Geliştiriciler
+## 📄 Lisans
 
-**Yağız ve Burak** — 
-Proje ile ilgili her türlü öneri ve geri bildirim için PR ve Issue gönderebilirsiniz!
+Bu proje MIT lisansı ile lisanslanmıştır. Ayrıntılar için [LICENSE](./LICENSE) dosyasına bakınız.
