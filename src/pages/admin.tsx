@@ -8,6 +8,8 @@ import {
 } from '@/firebase/accountService';
 import { getAuth, signOut } from 'firebase/auth';
 import { getAllTransactions } from '@/firebase/transferService';
+import NotificationButton from '@/components/NotificationButton';
+import Link from 'next/link'; // ✅ eklendi
 import Head from 'next/head';
 
 interface Account {
@@ -22,13 +24,13 @@ interface Transaction {
   from: string;
   to: string;
   amount: number;
-  note?: string; // 👈 açıklama alanı eklendi
+  note?: string;
   timestamp?: { toDate: () => Date };
 }
 
 const AdminPage = () => {
   const router = useRouter();
-  const currentUser = useUserStore((state) => state.currentUser);
+  const { currentUser, loading } = useUserStore();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [emailMap, setEmailMap] = useState<Record<string, string>>({});
@@ -47,7 +49,6 @@ const AdminPage = () => {
       });
       setEdited(initial);
 
-      // UID → isim map'i oluştur
       const map: Record<string, string> = {};
       all.forEach((acc) => {
         map[acc.id] = acc.name || acc.id;
@@ -68,6 +69,7 @@ const AdminPage = () => {
   };
 
   useEffect(() => {
+    if (loading) return;
     if (!currentUser) {
       router.push('/login');
     } else if (!currentUser.isAdmin) {
@@ -76,7 +78,7 @@ const AdminPage = () => {
       fetchAccounts();
       fetchTransactions();
     }
-  }, [currentUser, router]);
+  }, [currentUser, loading, router]);
 
   const handleLogout = async () => {
     setRedirecting(true);
@@ -121,12 +123,20 @@ const AdminPage = () => {
 
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">Admin Paneli</h1>
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 text-white px-3 py-1 rounded"
-        >
-          Çıkış
-        </button>
+        <div className="flex items-center gap-2">
+          <Link href="/admin/notifications">
+            <button className="bg-blue-600 text-white px-3 py-1 rounded">
+              Bildirim Gönder
+            </button>
+          </Link>
+          <NotificationButton />
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 text-white px-3 py-1 rounded"
+          >
+            Çıkış
+          </button>
+        </div>
       </div>
 
       <div className="space-y-4">
@@ -180,14 +190,11 @@ const AdminPage = () => {
                     <strong>{fromName}</strong> → <strong>{toName}</strong> kişisine{' '}
                     <span className="text-blue-600 font-semibold">{tx.amount}₺</span> gönderdi
                   </p>
-
-                  {/* 👇 Açıklama varsa göster */}
                   {tx.note && (
                     <p className="text-xs text-gray-600 italic mt-1">
                       Açıklama: {tx.note}
                     </p>
                   )}
-
                   <p className="text-xs text-gray-500">{dateStr}</p>
                 </li>
               );

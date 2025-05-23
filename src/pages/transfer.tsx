@@ -6,16 +6,17 @@ import { useEffect } from 'react';
 import TransferForm from '@/components/TransferForm';
 
 const TransferPage = () => {
-  const currentUser = useUserStore((state) => state.currentUser);
+  const { currentUser, loading } = useUserStore();
   const router = useRouter();
 
   useEffect(() => {
+    if (loading) return;
     if (!currentUser) {
       router.push('/login');
     }
-  }, [currentUser, router]);
+  }, [loading, currentUser, router]);
 
-  if (!currentUser) return null;
+  if (!loading && !currentUser) return null;
 
   return (
     <div className="p-4">

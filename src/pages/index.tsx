@@ -4,11 +4,12 @@ import { useUserStore } from '@/store/useUserStore';
 import { getAuth, signOut } from 'firebase/auth';
 import { getUserAccount } from '@/firebase/accountService';
 import TransferHistory from '@/components/TransferHistory';
+import NotificationButton from '@/components/NotificationButton'; // ✅ Bildirim butonu eklendi
 import Head from 'next/head';
 
 export default function HomePage() {
   const router = useRouter();
-  const currentUser = useUserStore((state) => state.currentUser);
+  const { currentUser, loading } = useUserStore();
   const [balance, setBalance] = useState<number>(0);
   const [name, setName] = useState<string>('');
   const [redirecting, setRedirecting] = useState(false);
@@ -34,7 +35,7 @@ export default function HomePage() {
     router.push('/transfer');
   };
 
-  if (!currentUser) {
+  if (!loading && !currentUser) {
     if (typeof window !== 'undefined') {
       router.push('/login');
     }
@@ -49,14 +50,17 @@ export default function HomePage() {
 
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">
-          Hoş geldin, {name || currentUser.username}!
+          Hoş geldin, {name || currentUser?.username}!
         </h1>
-        <button
-          onClick={handleLogout}
-          className="bg-red-500 text-white px-3 py-1 rounded"
-        >
-          Çıkış
-        </button>
+        <div className="flex items-center gap-2">
+          <NotificationButton /> {/* 🔔 Bildirim butonu */}
+          <button
+            onClick={handleLogout}
+            className="bg-red-500 text-white px-3 py-1 rounded"
+          >
+            Çıkış
+          </button>
+        </div>
       </div>
 
       <div className="border p-4 rounded shadow bg-white mb-4">
