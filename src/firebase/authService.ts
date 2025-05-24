@@ -5,6 +5,8 @@ import {
   signOut,
   onAuthStateChanged,
   updateProfile,
+  setPersistence,
+  browserSessionPersistence,
   User,
 } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
@@ -30,6 +32,8 @@ export const registerUser = async (email: string, password: string, name: string
 
 export const loginUser = async (email: string, password: string) => {
   try {
+    await setPersistence(auth, browserSessionPersistence); // ✅ Oturum sekme kapatıldığında sonlansın
+
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential;
   } catch (err) {

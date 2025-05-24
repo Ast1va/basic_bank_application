@@ -1,15 +1,15 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useUserStore } from '@/store/useUserStore';
-import { sendNotification } from '@/firebase/notificationService';
+import { sendNotificationToEmail } from '@/firebase/notificationService'; // ✅ yeni fonksiyon
 import Head from 'next/head';
-import Link from 'next/link'; // ✅ admin paneline dönüş için eklendi
+import Link from 'next/link';
 
 const AdminNotificationsPage = () => {
   const router = useRouter();
   const { currentUser, loading } = useUserStore();
   const [message, setMessage] = useState('');
-  const [userId, setUserId] = useState('');
+  const [email, setEmail] = useState('');
   const [status, setStatus] = useState<'success' | 'error' | ''>('');
 
   useEffect(() => {
@@ -26,9 +26,9 @@ const AdminNotificationsPage = () => {
     if (!message.trim()) return;
 
     try {
-      await sendNotification(message.trim(), userId || undefined);
+      await sendNotificationToEmail(message.trim(), email || undefined);
       setMessage('');
-      setUserId('');
+      setEmail('');
       setStatus('success');
     } catch {
       setStatus('error');
@@ -62,9 +62,9 @@ const AdminNotificationsPage = () => {
         />
 
         <input
-          value={userId}
-          onChange={(e) => setUserId(e.target.value)}
-          placeholder="Kullanıcı UID (isteğe bağlı)"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="Kullanıcı e-posta adresi (isteğe bağlı)"
           className="w-full p-2 border rounded"
         />
 
