@@ -1,4 +1,3 @@
-// src/firebase/transferService.ts
 import {
   collection,
   doc,
@@ -11,7 +10,6 @@ import {
   addDoc,
 } from 'firebase/firestore';
 import { db } from './config';
-import { getAuth } from 'firebase/auth';
 
 // 👇 Hata tipi (explicit any hatasını önlemek için)
 interface ErrorWithCode extends Error {
@@ -31,14 +29,6 @@ export const sendMoney = async (
 
   try {
     if (amount <= 0) throw new Error('Gönderilecek tutar 0’dan büyük olmalı.');
-
-    const auth = getAuth();
-    const authUid = auth.currentUser?.uid;
-
-    if (!authUid || authUid !== fromUid) {
-      console.warn('⚠️ fromUid uyuşmazlığı veya kimlik alınamadı');
-      throw new Error('Oturum doğrulaması başarısız.');
-    }
 
     // Alıcı UID'sini e-posta ile bul
     const accountQuery = query(collection(db, 'accounts'), where('email', '==', toEmail));
@@ -87,7 +77,7 @@ export const sendMoney = async (
         to: receiverId,
         amount,
         timestamp: serverTimestamp(),
-        note: note || '', // 👈 açıklama Firestore'a yazılıyor
+        note: note || '',
       });
       console.log('✅ Transfer kaydı başarıyla oluşturuldu. ID:', ref.id);
     } catch (err) {

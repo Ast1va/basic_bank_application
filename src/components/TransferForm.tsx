@@ -3,13 +3,12 @@ import { useState } from 'react';
 import { sendMoney } from '@/firebase/transferService';
 import { useUserStore } from '@/store/useUserStore';
 import { useRouter } from 'next/router';
-import { getAuth } from 'firebase/auth';
 
 const TransferForm = () => {
   const currentUser = useUserStore((state) => state.currentUser);
   const [email, setEmail] = useState('');
   const [amount, setAmount] = useState('');
-  const [note, setNote] = useState(''); // 👈 açıklama alanı
+  const [note, setNote] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -17,14 +16,6 @@ const TransferForm = () => {
     e.preventDefault();
     if (!currentUser) {
       alert('Kullanıcı bilgisi alınamadı.');
-      return;
-    }
-
-    const auth = getAuth();
-    const authUid = auth.currentUser?.uid;
-
-    if (!authUid) {
-      alert('Kullanıcı kimliği alınamadı.');
       return;
     }
 
@@ -36,18 +27,18 @@ const TransferForm = () => {
       return;
     }
 
-    if (trimmedEmail === auth.currentUser.email) {
+    if (trimmedEmail === currentUser.email) {
       alert('Kendinize para gönderemezsiniz.');
       return;
     }
 
     setLoading(true);
     try {
-      await sendMoney(authUid, trimmedEmail, parsedAmount, note); // 👈 açıklama dahil
+      await sendMoney(currentUser.id, trimmedEmail, parsedAmount, note);
       alert('Transfer başarılı!');
       setEmail('');
       setAmount('');
-      setNote(''); // 👈 form sıfırlama
+      setNote('');
       router.push('/');
     } catch (err: unknown) {
       if (err instanceof Error) {
@@ -62,8 +53,6 @@ const TransferForm = () => {
 
   return (
     <form onSubmit={handleSubmit} className="max-w-md mx-auto mt-8 space-y-4">
-      <h2 className="text-2xl font-bold text-center">Para Gönder</h2>
-
       <input
         type="email"
         placeholder="Alıcı e-posta"

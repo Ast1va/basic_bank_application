@@ -4,7 +4,7 @@ import { useUserStore } from '@/store/useUserStore';
 import { getAuth, signOut } from 'firebase/auth';
 import { getUserAccount } from '@/firebase/accountService';
 import TransferHistory from '@/components/TransferHistory';
-import NotificationButton from '@/components/NotificationButton'; // ✅ Bildirim butonu eklendi
+import NotificationButton from '@/components/NotificationButton';
 import Head from 'next/head';
 
 export default function HomePage() {
@@ -35,6 +35,10 @@ export default function HomePage() {
     router.push('/transfer');
   };
 
+  const handleReportsRedirect = () => {
+    router.push('/reports');
+  };
+
   if (!loading && !currentUser) {
     if (typeof window !== 'undefined') {
       router.push('/login');
@@ -53,7 +57,7 @@ export default function HomePage() {
           Hoş geldin, {name || currentUser?.username}!
         </h1>
         <div className="flex items-center gap-2">
-          <NotificationButton /> {/* 🔔 Bildirim butonu */}
+          <NotificationButton />
           <button
             onClick={handleLogout}
             className="bg-red-500 text-white px-3 py-1 rounded"
@@ -65,12 +69,22 @@ export default function HomePage() {
 
       <div className="border p-4 rounded shadow bg-white mb-4">
         <p className="text-lg font-semibold">Bakiye: ₺{balance}</p>
-        <button
-          onClick={handleTransferRedirect}
-          className="mt-3 bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
-        >
-          Para Gönder
-        </button>
+        <div className="mt-3 flex gap-2">
+          <button
+            onClick={handleTransferRedirect}
+            className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
+          >
+            Para Gönder
+          </button>
+
+          {/* 📊 Raporlar butonu */}
+          <button
+            onClick={handleReportsRedirect}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
+          >
+            Raporları Görüntüle
+          </button>
+        </div>
       </div>
 
       <TransferHistory />

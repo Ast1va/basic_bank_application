@@ -1,4 +1,3 @@
-// src/pages/transfer.tsx
 import Head from 'next/head';
 import { useUserStore } from '@/store/useUserStore';
 import { useRouter } from 'next/router';
@@ -23,6 +22,17 @@ const TransferPage = () => {
       <Head>
         <title>Para Gönder | Basic Bank</title>
       </Head>
+
+      {/* Başlık ve geri butonu */}
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-xl font-bold">Para Gönder</h1>
+        <button
+          onClick={() => router.push('/')}
+          className="px-4 py-2 rounded bg-gray-600 text-white hover:bg-gray-700 transition"
+        >
+          Ana Sayfaya Dön
+        </button>
+      </div>
 
       <TransferForm />
     </div>
