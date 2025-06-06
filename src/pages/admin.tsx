@@ -9,7 +9,7 @@ import {
 import { getAuth, signOut } from 'firebase/auth';
 import { getAllTransactions } from '@/firebase/transferService';
 import NotificationButton from '@/components/NotificationButton';
-import Link from 'next/link'; // ✅ eklendi
+import Link from 'next/link';
 import Head from 'next/head';
 
 interface Account {
@@ -129,6 +129,13 @@ const AdminPage = () => {
               Bildirim Gönder
             </button>
           </Link>
+
+          <Link href="/admin/reports">
+            <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">
+              Raporları Görüntüle
+            </button>
+          </Link>
+
           <NotificationButton />
           <button
             onClick={handleLogout}
@@ -162,9 +169,7 @@ const AdminPage = () => {
               </button>
               <button
                 onClick={() => toggleAccountStatus(acc.id, acc.disabled)}
-                className={`${
-                  acc.disabled ? 'bg-green-600' : 'bg-yellow-500'
-                } text-white px-4 py-2 rounded`}
+                className={`$${acc.disabled ? 'bg-green-600' : 'bg-yellow-500'} text-white px-4 py-2 rounded`}
               >
                 {acc.disabled ? 'Aktif Et' : 'Devre Dışı Bırak'}
               </button>

@@ -3,6 +3,7 @@ import { getAuth } from 'firebase/auth';
 import { db } from './config';
 import { Transaction } from '@/types/reports';
 
+// ✅ Kullanıcının sadece kendi işlemlerini çeker
 export const getUserTransactions = async (): Promise<Transaction[]> => {
   const auth = getAuth();
   const uid = auth.currentUser?.uid;
@@ -34,7 +35,7 @@ export const getUserTransactions = async (): Promise<Transaction[]> => {
   });
 };
 
-// ✅ Yeni: Hem gelen hem giden verilerle özet dönen fonksiyon
+// ✅ Özet verileri döner (toplam gönderim, alım, işlem sayısı)
 export const getTransactionSummary = async () => {
   const auth = getAuth();
   const uid = auth.currentUser?.uid;
@@ -84,4 +85,34 @@ export const getTransactionSummary = async () => {
     transactionCount: fromSnap.size + toSnap.size,
     activeMonths: allMonths.size,
   };
+};
+
+// ✅ ADMIN: Tüm kullanıcıların toplam gönderdiği miktarı döner (e-posta bazlı)
+export const getTotalSentPerUser = async (): Promise<{ email: string; total: number }[]> => {
+  const transactionsSnap = await getDocs(collection(db, 'transactions'));
+
+  const totalsByUid: Record<string, number> = {};
+
+  transactionsSnap.forEach((doc) => {
+    const data = doc.data();
+    if (!data.from || typeof data.amount !== 'number') return;
+    totalsByUid[data.from] = (totalsByUid[data.from] || 0) + data.amount;
+  });
+
+  const userIds = Object.keys(totalsByUid);
+  if (userIds.length === 0) return [];
+
+  const accountSnap = await getDocs(
+    query(collection(db, 'accounts'), where('__name__', 'in', userIds))
+  );
+
+  const uidToEmail: Record<string, string> = {};
+  accountSnap.forEach((doc) => {
+    uidToEmail[doc.id] = doc.data().email;
+  });
+
+  return userIds.map((uid) => ({
+    email: uidToEmail[uid] || uid,
+    total: totalsByUid[uid],
+  }));
 };

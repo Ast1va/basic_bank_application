@@ -1,0 +1,41 @@
+import React from 'react';
+import Head from 'next/head';
+import { useUserStore } from '@/store/useUserStore';
+import Link from 'next/link';
+import AdminSentByUserChart from '@/components/reports/AdminSentByUserChart';
+import ExportTransactionsButton from '@/components/reports/ExportTransactionsButton';
+import AdminSummaryCards from '@/components/reports/AdminSummaryCards';
+
+const AdminReportsPage = () => {
+  const { currentUser } = useUserStore();
+
+  if (!currentUser || currentUser.email !== 'admin@gmail.com') {
+    return <p className="text-red-600 p-4">Bu sayfaya sadece admin erişebilir.</p>;
+  }
+
+  return (
+    <div className="p-6 space-y-6">
+      <Head>
+        <title>Admin Raporlar | Basic Bank</title>
+      </Head>
+
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Tüm Kullanıcı Raporları</h1>
+        <Link href="/admin">
+          <button className="bg-gray-200 hover:bg-gray-300 px-4 py-2 rounded border text-sm">
+            Admin Paneline Dön
+          </button>
+        </Link>
+      </div>
+
+      <div className="flex justify-end">
+        <ExportTransactionsButton />
+      </div>
+
+      <AdminSummaryCards />
+      <AdminSentByUserChart />
+    </div>
+  );
+};
+
+export default AdminReportsPage;
