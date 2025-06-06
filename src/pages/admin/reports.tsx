@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { useUserStore } from '@/store/useUserStore';
 import Link from 'next/link';
 import AdminSentByUserChart from '@/components/reports/AdminSentByUserChart';
-import ExportTransactionsButton from '@/components/reports/ExportTransactionsButton';
+import AdminExportPage from '@/components/reports/AdminExportPage';
 import AdminSummaryCards from '@/components/reports/AdminSummaryCards';
 
 const AdminReportsPage = () => {
@@ -28,9 +28,8 @@ const AdminReportsPage = () => {
         </Link>
       </div>
 
-      <div className="flex justify-end">
-        <ExportTransactionsButton />
-      </div>
+      {/* Sadece admin için e-posta ile CSV ve Excel çıktısı */}
+      <AdminExportPage />
 
       <AdminSummaryCards />
       <AdminSentByUserChart />
