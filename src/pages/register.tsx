@@ -1,5 +1,5 @@
 import RegisterForm from '@/components/RegisterForm';
-import Head from 'next/head'; // ✅ Head eklendi
+import Head from 'next/head';
 
 export default function RegisterPage() {
   return (

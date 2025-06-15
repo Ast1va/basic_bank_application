@@ -4,6 +4,7 @@ import { db } from "../../firebase/config";
 import { saveAs } from "file-saver";
 import { TransactionExportRow } from "../../types/reports";
 import * as XLSX from "xlsx";
+import toast from "react-hot-toast"; // Toast eklendi
 
 const AdminExportPage = () => {
   const [transactions, setTransactions] = useState<TransactionExportRow[]>([]);
@@ -107,19 +108,31 @@ const AdminExportPage = () => {
   };
 
   const handleExportCSV = () => {
-    const exportRows = getExportWithStats();
-    const csv = toCSV(exportRows);
-    const BOM = "\uFEFF"; // UTF-8 BOM ekle
-    const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, "tum-islemler.csv"); // Türkçe dosya adı
+    const toastId = toast.loading("Hazırlanıyor...");
+    try {
+      const exportRows = getExportWithStats();
+      const csv = toCSV(exportRows);
+      const BOM = "\uFEFF"; // UTF-8 BOM ekle
+      const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
+      saveAs(blob, "tum-islemler.csv");
+      toast.success("CSV indirme başladı!", { id: toastId });
+    } catch {
+      toast.error("CSV indirilemedi!", { id: toastId });
+    }
   };
 
   const handleExportExcel = () => {
-    const exportRows = getExportWithStats();
-    const ws = XLSX.utils.json_to_sheet(exportRows);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Tüm İşlemler");
-    XLSX.writeFile(wb, "tum-islemler.xlsx"); // Türkçe dosya adı
+    const toastId = toast.loading("Hazırlanıyor...");
+    try {
+      const exportRows = getExportWithStats();
+      const ws = XLSX.utils.json_to_sheet(exportRows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Tüm İşlemler");
+      XLSX.writeFile(wb, "tum-islemler.xlsx");
+      toast.success("Excel indirme başladı!", { id: toastId });
+    } catch {
+      toast.error("Excel indirilemedi!", { id: toastId });
+    }
   };
 
   return (

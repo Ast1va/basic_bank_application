@@ -1,8 +1,8 @@
-// src/components/TransferForm.tsx
 import { useState } from 'react';
 import { sendMoney } from '@/firebase/transferService';
 import { useUserStore } from '@/store/useUserStore';
 import { useRouter } from 'next/router';
+import toast from 'react-hot-toast';
 
 const TransferForm = () => {
   const currentUser = useUserStore((state) => state.currentUser);
@@ -15,7 +15,7 @@ const TransferForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) {
-      alert('Kullanıcı bilgisi alınamadı.');
+      toast.error('Kullanıcı bilgisi alınamadı.');
       return;
     }
 
@@ -23,28 +23,29 @@ const TransferForm = () => {
     const parsedAmount = parseFloat(amount);
 
     if (!trimmedEmail || isNaN(parsedAmount) || parsedAmount <= 0) {
-      alert('Geçerli bir e-posta ve tutar giriniz.');
+      toast.error('Geçerli bir e-posta ve tutar giriniz.');
       return;
     }
 
     if (trimmedEmail === currentUser.email) {
-      alert('Kendinize para gönderemezsiniz.');
+      toast.error('Kendinize para gönderemezsiniz.');
       return;
     }
 
     setLoading(true);
+    const toastId = toast.loading('Transfer gönderiliyor...');
     try {
       await sendMoney(currentUser.id, trimmedEmail, parsedAmount, note);
-      alert('Transfer başarılı!');
+      toast.success('Transfer başarılı!', { id: toastId });
       setEmail('');
       setAmount('');
       setNote('');
       router.push('/');
     } catch (err: unknown) {
       if (err instanceof Error) {
-        alert(`Hata: ${err.message}`);
+        toast.error(`Hata: ${err.message}`, { id: toastId });
       } else {
-        alert('Transfer sırasında bilinmeyen bir hata oluştu.');
+        toast.error('Transfer sırasında bilinmeyen bir hata oluştu.', { id: toastId });
       }
     } finally {
       setLoading(false);

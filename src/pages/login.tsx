@@ -1,6 +1,5 @@
-// src/pages/login.tsx
 import LoginForm from '@/components/LoginForm';
-import Head from 'next/head'; // ✅ Head eklendi
+import Head from 'next/head';
 
 const LoginPage = () => {
   return (

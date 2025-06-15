@@ -6,7 +6,7 @@ import { getUserAccount } from '@/firebase/accountService';
 import TransferHistory from '@/components/TransferHistory';
 import NotificationButton from '@/components/NotificationButton';
 import Head from 'next/head';
-
+import toast from 'react-hot-toast'; 
 export default function HomePage() {
   const router = useRouter();
   const { currentUser, loading } = useUserStore();
@@ -28,6 +28,7 @@ export default function HomePage() {
   const handleLogout = async () => {
     setRedirecting(true);
     await signOut(getAuth());
+    toast.success("Hesaptan çıkıldı."); 
     router.push('/login');
   };
 
@@ -54,7 +55,11 @@ export default function HomePage() {
 
       <div className="flex justify-between items-center mb-4">
         <h1 className="text-2xl font-bold">
-          Hoş geldin, {name || currentUser?.username}!
+          Hoş geldin{(name && name !== currentUser?.email)
+            ? `, ${name}`
+            : (currentUser?.username && currentUser.username !== currentUser?.email)
+              ? `, ${currentUser.username}`
+              : ""}!
         </h1>
         <div className="flex items-center gap-2">
           <NotificationButton />

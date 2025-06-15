@@ -11,6 +11,7 @@ import { getAllTransactions } from '@/firebase/transferService';
 import NotificationButton from '@/components/NotificationButton';
 import Link from 'next/link';
 import Head from 'next/head';
+import toast from 'react-hot-toast'; 
 
 interface Account {
   id: string;
@@ -54,8 +55,8 @@ const AdminPage = () => {
         map[acc.id] = acc.name || acc.id;
       });
       setEmailMap(map);
-    } catch (error) {
-      console.error('Hesaplar alınamadı:', error);
+    } catch {
+      toast.error('❌ Hesaplar alınamadı!');
     }
   };
 
@@ -63,8 +64,8 @@ const AdminPage = () => {
     try {
       const txs = await getAllTransactions();
       setTransactions(txs);
-    } catch (error) {
-      console.error('Transferler alınamadı:', error);
+    } catch {
+      toast.error('❌ Transferler alınamadı!');
     }
   };
 
@@ -83,13 +84,14 @@ const AdminPage = () => {
   const handleLogout = async () => {
     setRedirecting(true);
     await signOut(getAuth());
+    toast('👋 Hesaptan çıkış yapıldı.');
     router.push('/login');
   };
 
   const handleUpdate = async (id: string) => {
     const parsed = parseFloat(edited[id]);
     if (isNaN(parsed)) {
-      alert('Geçerli bir sayı giriniz.');
+      toast.error('⚠️ Geçerli bir sayı giriniz.');
       return;
     }
 
@@ -97,8 +99,9 @@ const AdminPage = () => {
     try {
       await updateUserBalance(id, parsed);
       await fetchAccounts();
-    } catch (error) {
-      console.error('Bakiye güncelleme hatası:', error);
+      toast.success('💸 Bakiye güncellendi!');
+    } catch {
+      toast.error('❌ Bakiye güncelleme hatası!');
     } finally {
       setUpdating(false);
     }
@@ -108,8 +111,13 @@ const AdminPage = () => {
     try {
       await updateAccountDisabledStatus(id, !currentStatus);
       await fetchAccounts();
-    } catch (error) {
-      console.error('Durum değiştirme hatası:', error);
+      if (currentStatus) {
+        toast.success('✅ Hesap tekrar aktif edildi!');
+      } else {
+        toast('🚫 Hesap devre dışı bırakıldı.');
+      }
+    } catch {
+      toast.error('❌ Durum değiştirme hatası!');
     }
   };
 
@@ -169,7 +177,9 @@ const AdminPage = () => {
               </button>
               <button
                 onClick={() => toggleAccountStatus(acc.id, acc.disabled)}
-                className={`$${acc.disabled ? 'bg-green-600' : 'bg-yellow-500'} text-white px-4 py-2 rounded`}
+                className={`${
+                  acc.disabled ? 'bg-green-600' : 'bg-yellow-500'
+                } text-white px-4 py-2 rounded`}
               >
                 {acc.disabled ? 'Aktif Et' : 'Devre Dışı Bırak'}
               </button>
