@@ -6,7 +6,8 @@ import { getUserAccount } from '@/firebase/accountService';
 import TransferHistory from '@/components/TransferHistory';
 import NotificationButton from '@/components/NotificationButton';
 import Head from 'next/head';
-import toast from 'react-hot-toast'; 
+import toast from 'react-hot-toast';
+
 export default function HomePage() {
   const router = useRouter();
   const { currentUser, loading } = useUserStore();
@@ -28,7 +29,7 @@ export default function HomePage() {
   const handleLogout = async () => {
     setRedirecting(true);
     await signOut(getAuth());
-    toast.success("Hesaptan çıkıldı."); 
+    toast.success("Hesaptan çıkıldı.");
     router.push('/login');
   };
 
@@ -38,6 +39,10 @@ export default function HomePage() {
 
   const handleReportsRedirect = () => {
     router.push('/reports');
+  };
+
+  const handleProfileRedirect = () => {
+    router.push('/profile');
   };
 
   if (!loading && !currentUser) {
@@ -74,7 +79,7 @@ export default function HomePage() {
 
       <div className="border p-4 rounded shadow bg-white mb-4">
         <p className="text-lg font-semibold">Bakiye: ₺{balance}</p>
-        <div className="mt-3 flex gap-2">
+        <div className="mt-3 flex gap-2 flex-wrap">
           <button
             onClick={handleTransferRedirect}
             className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded"
@@ -82,12 +87,18 @@ export default function HomePage() {
             Para Gönder
           </button>
 
-          {/* 📊 Raporlar butonu */}
           <button
             onClick={handleReportsRedirect}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
           >
             Raporları Görüntüle
+          </button>
+
+          <button
+            onClick={handleProfileRedirect}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded"
+          >
+            Profil Bilgilerini Güncelle
           </button>
         </div>
       </div>

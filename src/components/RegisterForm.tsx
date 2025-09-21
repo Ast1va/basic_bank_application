@@ -3,6 +3,7 @@ import { registerUser } from '@/firebase/authService';
 import { createUserAccountIfNotExists } from '@/firebase/accountService';
 import { useRouter } from 'next/router';
 import { FirebaseError } from 'firebase/app';
+import { sendEmailVerification } from 'firebase/auth';
 import toast from 'react-hot-toast';
 
 const RegisterForm = () => {
@@ -30,7 +31,11 @@ const RegisterForm = () => {
       const uid = user.uid;
 
       await createUserAccountIfNotExists(uid, name);
-      toast.success("Kayıt başarılı! Giriş yapabilirsiniz.");
+
+      // 🔐 E-posta doğrulama gönderimi
+      await sendEmailVerification(user);
+      toast.success("Kayıt başarılı! Lütfen e-posta adresinizi doğrulayın.");
+
       router.push('/login');
     } catch (err: unknown) {
       let errorMsg = 'Kayıt başarısız oldu.';
@@ -83,7 +88,6 @@ const RegisterForm = () => {
         required
       />
 
-      {/* 👁️ Şifre inputu ve göz butonu */}
       <div className="relative">
         <input
           type={showPassword ? "text" : "password"}
@@ -103,8 +107,6 @@ const RegisterForm = () => {
           {showPassword ? "🙈" : "👁️"}
         </button>
       </div>
-
-      {/* Eski hata mesajı kaldırıldı, her şey toast ile bildiriliyor */}
 
       <button
         type="submit"

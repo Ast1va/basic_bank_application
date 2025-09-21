@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { loginUser } from '@/firebase/authService';
+import { loginUser, resendEmailVerification } from '@/firebase/authService';
 import { useRouter } from 'next/router';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '@/firebase/config';
@@ -13,6 +13,7 @@ const LoginForm = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showResetForm, setShowResetForm] = useState(false);
+  const [showResend, setShowResend] = useState(false);
   const router = useRouter();
   const login = useUserStore((state) => state.login);
 
@@ -23,14 +24,19 @@ const LoginForm = () => {
 
     try {
       const userCredential = await loginUser(email, password);
-      const { uid, email: userEmail } = userCredential.user;
+      const { uid, email: userEmail, emailVerified } = userCredential.user;
 
-      // Hesap bilgilerini kontrol et (disabled kontrolü)
+      if (!emailVerified && userEmail !== "admin@gmail.com") {
+        toast.error("E-postanız doğrulanmamış. Lütfen doğrulayın.", { id: toastId });
+        setShowResend(true);
+        return;
+      }
+
       const accountRef = doc(db, 'accounts', uid);
       const accountSnap = await getDoc(accountRef);
 
       if (accountSnap.exists() && accountSnap.data().disabled === true) {
-        toast.error('Bu hesap devre dışı bırakılmış. Lütfen yöneticinizle iletişime geçin.', { id: toastId });
+        toast.error('Bu hesap devre dışı bırakılmış.', { id: toastId });
         return;
       }
 
@@ -45,18 +51,7 @@ const LoginForm = () => {
         username: userEmail || '',
       });
 
-      if (isAdmin) {
-        toast.success("Admin girişi başarılı!", { id: toastId });
-      } else {
-        toast.success("Başarıyla giriş yaptınız!", { id: toastId });
-      }
-
-      console.log('✅ Giriş sonrası userStore güncelleniyor:', {
-        uid,
-        email: userEmail,
-        isAdmin,
-      });
-
+      toast.success(isAdmin ? "Admin girişi başarılı!" : "Başarıyla giriş yaptınız!", { id: toastId });
       router.push(isAdmin ? '/admin' : '/');
     } catch (err: unknown) {
       let errorMsg = 'Giriş başarısız oldu.';
@@ -71,11 +66,18 @@ const LoginForm = () => {
           case 'auth/invalid-email':
             errorMsg = 'Geçerli bir e-posta adresi giriniz.';
             break;
-          default:
-            errorMsg = 'Giriş başarısız oldu.';
         }
       }
       toast.error(errorMsg, { id: toastId });
+    }
+  };
+
+  const handleResend = async () => {
+    try {
+      await resendEmailVerification(email, password);
+      toast.success("Doğrulama e-postası tekrar gönderildi.");
+    } catch {
+      toast.error("Mail tekrar gönderilemedi.");
     }
   };
 
@@ -93,7 +95,6 @@ const LoginForm = () => {
           required
         />
 
-        {/* Şifre inputu ve göz butonu */}
         <div className="relative">
           <input
             type={showPassword ? "text" : "password"}
@@ -107,8 +108,6 @@ const LoginForm = () => {
             type="button"
             onClick={() => setShowPassword((v) => !v)}
             className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500"
-            tabIndex={-1}
-            aria-label={showPassword ? "Şifreyi gizle" : "Şifreyi göster"}
           >
             {showPassword ? "🙈" : "👁️"}
           </button>
@@ -120,6 +119,16 @@ const LoginForm = () => {
         >
           Giriş Yap
         </button>
+
+        {showResend && (
+          <button
+            type="button"
+            onClick={handleResend}
+            className="text-sm text-purple-600 underline w-full"
+          >
+            Doğrulama e-postasını tekrar gönder
+          </button>
+        )}
 
         <button
           type="button"

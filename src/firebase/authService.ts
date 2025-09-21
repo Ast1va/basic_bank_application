@@ -8,6 +8,11 @@ import {
   setPersistence,
   browserSessionPersistence,
   User,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updateEmail,
+  updatePassword,
+  sendEmailVerification,
 } from 'firebase/auth';
 import { FirebaseError } from 'firebase/app';
 import { app } from './config';
@@ -32,8 +37,7 @@ export const registerUser = async (email: string, password: string, name: string
 
 export const loginUser = async (email: string, password: string) => {
   try {
-    await setPersistence(auth, browserSessionPersistence); // ✅ Oturum sekme kapatıldığında sonlansın
-
+    await setPersistence(auth, browserSessionPersistence);
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential;
   } catch (err) {
@@ -51,16 +55,14 @@ export const logoutUser = async () => {
   await signOut(auth);
 };
 
-// ✅ Firebase listener (manuel kullanmak isteyenler için)
 export const subscribeToAuthChanges = (callback: (user: User | null) => void) => {
   return onAuthStateChanged(auth, callback);
 };
 
-// ✅ Otomatik store senkronizasyon fonksiyonu
 export const subscribeToAuthChangesAndSyncStore = () => {
   const setLoading = useUserStore.getState().setLoading;
 
-  setLoading(true); // işlem başlarken beklemede
+  setLoading(true);
 
   onAuthStateChanged(auth, async (user) => {
     if (user) {
@@ -81,6 +83,25 @@ export const subscribeToAuthChangesAndSyncStore = () => {
       useUserStore.getState().logout();
     }
 
-    setLoading(false); // her durumda bitir
+    setLoading(false);
   });
+};
+
+export const reauthenticateUser = async (user: User, currentPassword: string) => {
+  const credential = EmailAuthProvider.credential(user.email || '', currentPassword);
+  await reauthenticateWithCredential(user, credential);
+};
+
+export const updateUserEmail = async (user: User, newEmail: string) => {
+  await updateEmail(user, newEmail);
+};
+
+export const updateUserPassword = async (user: User, newPassword: string) => {
+  await updatePassword(user, newPassword);
+};
+
+// ✅ Doğrulama e-postasını tekrar gönderme fonksiyonu
+export const resendEmailVerification = async (email: string, password: string) => {
+  const userCredential = await signInWithEmailAndPassword(auth, email, password);
+  await sendEmailVerification(userCredential.user);
 };

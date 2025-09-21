@@ -9,7 +9,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from './config';
-import { getAuth } from 'firebase/auth';
+import { getAuth, EmailAuthProvider, reauthenticateWithCredential, updateEmail, sendEmailVerification } from 'firebase/auth';
 
 /**
  * Kullanıcı için Firestore'da tek bir hesap oluşturur (eğer yoksa)
@@ -25,12 +25,11 @@ export const createUserAccountIfNotExists = async (userId: string, name: string)
     await setDoc(docRef, {
       balance: 0,
       name,
-      email: authUser.email,           // 🔧 EKLENDİ
+      email: authUser.email,
       disabled: false,
-      createdAt: serverTimestamp(),    // 🔧 Opsiyonel ama önerilir
+      createdAt: serverTimestamp(),
     });
-
-      }
+  }
 };
 
 /**
@@ -60,7 +59,6 @@ export const updateUserBalance = async (userId: string, newBalance: number) => {
   const auth = getAuth();
   const currentUser = auth.currentUser;
 
-  // Admin e-posta kontrolü
   const adminEmails = ['admin@gmail.com'];
 
   if (!currentUser || !adminEmails.includes(currentUser.email || '')) {
@@ -82,4 +80,38 @@ export const getAllAccounts = async (): Promise<
     id: doc.id,
     ...(doc.data() as { balance: number; name?: string; disabled?: boolean }),
   }));
+};
+
+/**
+ * 🔄 Kullanıcının doğum tarihi, meslek, gelir gibi profil bilgilerini güncelle
+ */
+export const updateFirestoreAccountInfo = async (
+  userId: string,
+  updatedData: {
+    birthDate: string;
+    occupation: string;
+    avgIncome: number;
+  }
+) => {
+  const docRef = doc(db, 'accounts', userId);
+  await updateDoc(docRef, updatedData);
+};
+
+/**
+ * ✅ E-Posta adresini değiştirme ve doğrulama gönderme
+ */
+export const changeUserEmail = async (
+  currentEmail: string,
+  password: string,
+  newEmail: string
+) => {
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+  if (!currentUser) throw new Error('Kullanıcı doğrulanamadı.');
+
+  const credential = EmailAuthProvider.credential(currentEmail, password);
+
+  await reauthenticateWithCredential(currentUser, credential);
+  await updateEmail(currentUser, newEmail);
+  await sendEmailVerification(currentUser);
 };
