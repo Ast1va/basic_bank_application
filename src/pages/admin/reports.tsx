@@ -2,9 +2,9 @@ import React from 'react';
 import Head from 'next/head';
 import { useUserStore } from '@/store/useUserStore';
 import Link from 'next/link';
-import AdminSentByUserChart from '@/components/reports/AdminSentByUserChart';
+import  EnhancedAdminSummaryCards from '@/components/reports/EnhancedAdminSummaryCards';
 import AdminExportPage from '@/components/reports/AdminExportPage';
-import AdminSummaryCards from '@/components/reports/AdminSummaryCards';
+import EnhancedAdminSentByUserChart from '@/components/reports/EnhancedAdminSentByUserChart';
 
 const AdminReportsPage = () => {
   const { currentUser } = useUserStore();
@@ -31,8 +31,8 @@ const AdminReportsPage = () => {
       {/* Sadece admin için e-posta ile CSV ve Excel çıktısı */}
       <AdminExportPage />
 
-      <AdminSummaryCards />
-      <AdminSentByUserChart />
+      <EnhancedAdminSentByUserChart />
+      < EnhancedAdminSummaryCards />
     </div>
   );
 };

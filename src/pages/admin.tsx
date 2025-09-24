@@ -1,18 +1,16 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { useUserStore } from '@/store/useUserStore';
-import {
-  getAllAccounts,
-  updateUserBalance,
-  updateAccountDisabledStatus,
-} from '@/firebase/accountService';
+import { getAllAccounts } from '@/firebase/accountService';
 import { getAuth, signOut } from 'firebase/auth';
 import { getAllTransactions } from '@/firebase/transferService';
 import NotificationButton from '@/components/NotificationButton';
 import Link from 'next/link';
 import Head from 'next/head';
-import toast from 'react-hot-toast'; 
+import toast from 'react-hot-toast';
 
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Account {
   id: string;
   balance: number;
@@ -29,43 +27,76 @@ interface Transaction {
   timestamp?: { toDate: () => Date };
 }
 
+interface DashboardStats {
+  totalUsers: number;
+  activeUsers: number;
+  disabledUsers: number;
+  totalTransactions: number;
+  todayTransactions: number;
+  totalTransferVolume: number;
+  todayTransferVolume: number;
+}
+
 const AdminPage = () => {
   const router = useRouter();
   const { currentUser, loading } = useUserStore();
-  const [accounts, setAccounts] = useState<Account[]>([]);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalUsers: 0,
+    activeUsers: 0,
+    disabledUsers: 0,
+    totalTransactions: 0,
+    todayTransactions: 0,
+    totalTransferVolume: 0,
+    todayTransferVolume: 0,
+  });
+  const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([]);
   const [emailMap, setEmailMap] = useState<Record<string, string>>({});
-  const [edited, setEdited] = useState<Record<string, string>>({});
-  const [updating, setUpdating] = useState(false);
   const [redirecting, setRedirecting] = useState(false);
+  const [loadingData, setLoadingData] = useState(true);
 
-  const fetchAccounts = async () => {
+  const fetchDashboardData = async () => {
     try {
-      const all = await getAllAccounts();
-      setAccounts(all);
+      // Kullanıcı verilerini çek
+      const accounts = await getAllAccounts();
+      const transactions = await getAllTransactions();
 
-      const initial: Record<string, string> = {};
-      all.forEach((acc) => {
-        initial[acc.id] = acc.balance.toString();
+      // Email mapping oluştur
+      const emailMapping: Record<string, string> = {};
+      accounts.forEach((acc) => {
+        emailMapping[acc.id] = acc.name || acc.id;
       });
-      setEdited(initial);
+      setEmailMap(emailMapping);
 
-      const map: Record<string, string> = {};
-      all.forEach((acc) => {
-        map[acc.id] = acc.name || acc.id;
+      // İstatistikleri hesapla
+      const activeUsers = accounts.filter(acc => !acc.disabled).length;
+      const disabledUsers = accounts.filter(acc => acc.disabled).length;
+      const totalTransferVolume = transactions.reduce((sum, tx) => sum + tx.amount, 0);
+
+      // Bugünkü işlemler
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayTxs = transactions.filter(tx => {
+        const txDate = tx.timestamp?.toDate();
+        return txDate && txDate >= today;
       });
-      setEmailMap(map);
-    } catch {
-      toast.error('❌ Hesaplar alınamadı!');
-    }
-  };
+      const todayVolume = todayTxs.reduce((sum, tx) => sum + tx.amount, 0);
 
-  const fetchTransactions = async () => {
-    try {
-      const txs = await getAllTransactions();
-      setTransactions(txs);
+      setStats({
+        totalUsers: accounts.length,
+        activeUsers,
+        disabledUsers,
+        totalTransactions: transactions.length,
+        todayTransactions: todayTxs.length,
+        totalTransferVolume,
+        todayTransferVolume: todayVolume,
+      });
+
+      // Son 10 işlemi göster
+      setRecentTransactions(transactions.slice(0, 10));
     } catch {
-      toast.error('❌ Transferler alınamadı!');
+      toast.error('Dashboard verileri alınamadı!');
+    } finally {
+      setLoadingData(false);
     }
   };
 
@@ -76,152 +107,179 @@ const AdminPage = () => {
     } else if (!currentUser.isAdmin) {
       router.push('/');
     } else {
-      fetchAccounts();
-      fetchTransactions();
+      fetchDashboardData();
     }
   }, [currentUser, loading, router]);
 
   const handleLogout = async () => {
     setRedirecting(true);
     await signOut(getAuth());
-    toast('👋 Hesaptan çıkış yapıldı.');
+    toast('Hesaptan çıkış yapıldı.');
     router.push('/login');
-  };
-
-  const handleUpdate = async (id: string) => {
-    const parsed = parseFloat(edited[id]);
-    if (isNaN(parsed)) {
-      toast.error('⚠️ Geçerli bir sayı giriniz.');
-      return;
-    }
-
-    setUpdating(true);
-    try {
-      await updateUserBalance(id, parsed);
-      await fetchAccounts();
-      toast.success('💸 Bakiye güncellendi!');
-    } catch {
-      toast.error('❌ Bakiye güncelleme hatası!');
-    } finally {
-      setUpdating(false);
-    }
-  };
-
-  const toggleAccountStatus = async (id: string, currentStatus: boolean | undefined) => {
-    try {
-      await updateAccountDisabledStatus(id, !currentStatus);
-      await fetchAccounts();
-      if (currentStatus) {
-        toast.success('✅ Hesap tekrar aktif edildi!');
-      } else {
-        toast('🚫 Hesap devre dışı bırakıldı.');
-      }
-    } catch {
-      toast.error('❌ Durum değiştirme hatası!');
-    }
   };
 
   if (!currentUser?.isAdmin) return null;
 
   return (
-    <div className="max-w-2xl mx-auto p-6">
+    <div className="max-w-7xl mx-auto p-6">
       <Head>
         <title>Admin Paneli | Basic Bank</title>
       </Head>
 
-      <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Admin Paneli</h1>
-        <div className="flex items-center gap-2">
-          <Link href="/admin/notifications">
-            <button className="bg-blue-600 text-white px-3 py-1 rounded">
-              Bildirim Gönder
-            </button>
-          </Link>
-
-          <Link href="/admin/reports">
-            <button className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded">
-              Raporları Görüntüle
-            </button>
-          </Link>
-
+      {/* Header */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+        <div className="flex items-center gap-3">
           <NotificationButton />
           <button
             onClick={handleLogout}
-            className="bg-red-500 text-white px-3 py-1 rounded"
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition-colors"
           >
             Çıkış
           </button>
         </div>
       </div>
 
-      <div className="space-y-4">
-        {accounts.map((acc) => (
-          <div key={acc.id} className="border p-4 rounded space-y-2">
-            <p className="text-sm text-gray-500">Kullanıcı ID: {acc.id}</p>
-            <p className="text-base font-medium">Ad: {acc.name || 'Belirtilmemiş'}</p>
-            <input
-              type="number"
-              value={edited[acc.id]}
-              onChange={(e) =>
-                setEdited((prev) => ({ ...prev, [acc.id]: e.target.value }))
-              }
-              className="border p-2 rounded w-40"
-            />
-            <div className="flex gap-2 mt-2">
-              <button
-                onClick={() => handleUpdate(acc.id)}
-                disabled={updating}
-                className="bg-blue-600 text-white px-4 py-2 rounded"
-              >
-                Bakiye Güncelle
-              </button>
-              <button
-                onClick={() => toggleAccountStatus(acc.id, acc.disabled)}
-                className={`${
-                  acc.disabled ? 'bg-green-600' : 'bg-yellow-500'
-                } text-white px-4 py-2 rounded`}
-              >
-                {acc.disabled ? 'Aktif Et' : 'Devre Dışı Bırak'}
-              </button>
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-white p-6 rounded-lg shadow border-l-4 border-blue-500">
+          <div className="flex items-center">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600">Toplam Kullanıcı</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
+            </div>
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+              <span className="text-blue-600 text-xl">👥</span>
             </div>
           </div>
-        ))}
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow border-l-4 border-green-500">
+          <div className="flex items-center">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600">Aktif Kullanıcı</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.activeUsers}</p>
+              <p className="text-xs text-gray-500">{stats.disabledUsers} devre dışı</p>
+            </div>
+            <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+              <span className="text-green-600 text-xl">✅</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow border-l-4 border-purple-500">
+          <div className="flex items-center">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600">Toplam Transfer</p>
+              <p className="text-2xl font-bold text-gray-900">{stats.totalTransactions}</p>
+              <p className="text-xs text-gray-500">Bugün: {stats.todayTransactions}</p>
+            </div>
+            <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+              <span className="text-purple-600 text-xl">💸</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white p-6 rounded-lg shadow border-l-4 border-orange-500">
+          <div className="flex items-center">
+            <div className="flex-1">
+              <p className="text-sm font-medium text-gray-600">Transfer Hacmi</p>
+              <p className="text-2xl font-bold text-gray-900">₺{stats.totalTransferVolume.toLocaleString()}</p>
+              <p className="text-xs text-gray-500">Bugün: ₺{stats.todayTransferVolume.toLocaleString()}</p>
+            </div>
+            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
+              <span className="text-orange-600 text-xl">📊</span>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="mt-8 border-t pt-4">
-        <h2 className="text-lg font-semibold mb-2">Transfer Geçmişi</h2>
-        {transactions.length === 0 ? (
-          <p className="text-gray-500">Hiç işlem bulunamadı.</p>
-        ) : (
-          <ul className="space-y-2">
-            {transactions.map((tx) => {
-              const fromName = emailMap[tx.from] || tx.from;
-              const toName = emailMap[tx.to] || tx.to;
-              const dateStr = tx.timestamp?.toDate().toLocaleString('tr-TR') || '-';
+      {/* Quick Actions */}
+      <div className="bg-white p-6 rounded-lg shadow mb-8">
+        <h2 className="text-xl font-semibold mb-4">Hızlı İşlemler</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Link href="/admin/users">
+            <button className="w-full bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg transition-colors flex flex-col items-center gap-2">
+              <span className="text-2xl">👥</span>
+              <span className="font-medium">Kullanıcı Yönetimi</span>
+            </button>
+          </Link>
 
-              return (
-                <li key={tx.id} className="text-sm border p-3 rounded shadow-sm bg-white">
-                  <p>
-                    <strong>{fromName}</strong> → <strong>{toName}</strong> kişisine{' '}
-                    <span className="text-blue-600 font-semibold">{tx.amount}₺</span> gönderdi
-                  </p>
-                  {tx.note && (
-                    <p className="text-xs text-gray-600 italic mt-1">
-                      Açıklama: {tx.note}
-                    </p>
-                  )}
-                  <p className="text-xs text-gray-500">{dateStr}</p>
-                </li>
-              );
-            })}
-          </ul>
-        )}
+          <Link href="/admin/notifications">
+            <button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-lg transition-colors flex flex-col items-center gap-2">
+              <span className="text-2xl">📢</span>
+              <span className="font-medium">Bildirim Gönder</span>
+            </button>
+          </Link>
+
+          <Link href="/admin/reports">
+            <button className="w-full bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg transition-colors flex flex-col items-center gap-2">
+              <span className="text-2xl">📈</span>
+              <span className="font-medium">Raporlar</span>
+            </button>
+          </Link>
+
+          <button
+            onClick={() => fetchDashboardData()}
+            className="w-full bg-gray-600 hover:bg-gray-700 text-white p-4 rounded-lg transition-colors flex flex-col items-center gap-2"
+          >
+            <span className="text-2xl">🔄</span>
+            <span className="text-sm opacity-90">Dashboard güncelle</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Recent Transactions */}
+      <div className="bg-white rounded-lg shadow">
+        <div className="p-6 border-b">
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold">Son Transferler</h2>
+            <Link href="/admin/transactions" className="text-blue-600 hover:text-blue-700 text-sm">
+              Tümünü Gör →
+            </Link>
+          </div>
+        </div>
+        
+        <div className="p-6">
+          {loadingData ? (
+            <p className="text-center text-gray-500">Veriler yükleniyor...</p>
+          ) : recentTransactions.length === 0 ? (
+            <p className="text-center text-gray-500">Henüz işlem bulunamadı.</p>
+          ) : (
+            <div className="space-y-3">
+              {recentTransactions.map((tx) => {
+                const fromName = emailMap[tx.from] || tx.from;
+                const toName = emailMap[tx.to] || tx.to;
+                const dateStr = tx.timestamp?.toDate().toLocaleString('tr-TR') || '-';
+
+                return (
+                  <div key={tx.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                    <div className="flex-1">
+                      <p className="text-sm">
+                        <span className="font-medium">{fromName}</span> → <span className="font-medium">{toName}</span>
+                      </p>
+                      {tx.note && (
+                        <p className="text-xs text-gray-600 mt-1">‘{tx.note}’</p>
+                      )}
+                      <p className="text-xs text-gray-500">{dateStr}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-semibold text-blue-600">₺{tx.amount}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {redirecting && (
-        <p className="text-sm text-gray-600 text-center mt-4">
-          Giriş sayfasına yönlendiriliyorsunuz...
-        </p>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-6 rounded-lg">
+            <p className="text-center">Giriş sayfasına yönlendiriliyorsunuz...</p>
+          </div>
+        </div>
       )}
     </div>
   );
